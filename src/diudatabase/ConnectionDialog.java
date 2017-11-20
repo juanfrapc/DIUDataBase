@@ -5,6 +5,8 @@
  */
 package diudatabase;
 
+import javax.swing.JOptionPane;
+
 /**
  *
  * @author Entrar
@@ -14,8 +16,8 @@ public class ConnectionDialog extends javax.swing.JDialog {
     /**
      * Creates new form ConnectionDialog
      */
-    public ConnectionDialog(java.awt.Frame parent, boolean modal) {
-        super(parent, modal);
+    public ConnectionDialog(java.awt.Frame parent) {
+        super(parent, true);
         initComponents();
         pack();
     }
@@ -36,7 +38,7 @@ public class ConnectionDialog extends javax.swing.JDialog {
         hostTextField = new javax.swing.JTextField();
         nameTextField = new javax.swing.JTextField();
         jLabel5 = new javax.swing.JLabel();
-        portTextField = new javax.swing.JTextField();
+        portField = new javax.swing.JFormattedTextField();
         jPanel3 = new javax.swing.JPanel();
         jLabel3 = new javax.swing.JLabel();
         jLabel4 = new javax.swing.JLabel();
@@ -59,6 +61,8 @@ public class ConnectionDialog extends javax.swing.JDialog {
 
         jLabel5.setText("Port:");
 
+        portField.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0"))));
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -68,18 +72,21 @@ public class ConnectionDialog extends javax.swing.JDialog {
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addComponent(jLabel1)
-                        .addGap(62, 62, 62)
-                        .addComponent(hostTextField))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(hostTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 248, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel2)
                             .addComponent(jLabel5))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(portTextField)
-                            .addComponent(nameTextField))))
+                            .addComponent(nameTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 249, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(portField, javax.swing.GroupLayout.PREFERRED_SIZE, 249, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap())
         );
+
+        jPanel2Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {hostTextField, nameTextField, portField});
+
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
@@ -94,11 +101,11 @@ public class ConnectionDialog extends javax.swing.JDialog {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel5)
-                    .addComponent(portTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(portField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jPanel2Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {hostTextField, jLabel1, jLabel2, jLabel5, nameTextField, portTextField});
+        jPanel2Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {hostTextField, jLabel1, jLabel2, jLabel5, nameTextField});
 
         jPanel3.setBorder(javax.swing.BorderFactory.createEtchedBorder());
 
@@ -138,8 +145,18 @@ public class ConnectionDialog extends javax.swing.JDialog {
         jPanel3Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {jLabel3, jLabel4, passwordField, userTextField});
 
         jButton1.setText("Create");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
 
         jButton2.setText("Cancel");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -191,7 +208,21 @@ public class ConnectionDialog extends javax.swing.JDialog {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        status = CANCEL;
+        this.dispose();
+    }//GEN-LAST:event_jButton2ActionPerformed
 
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        if (checkFields()) {
+            status = APPROVE;
+            this.dispose();
+        }
+    }//GEN-LAST:event_jButton1ActionPerformed
+
+    public static final int APPROVE = 1;
+    public static final int CANCEL = 0;
+    private int status;
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField hostTextField;
     private javax.swing.JButton jButton1;
@@ -206,7 +237,47 @@ public class ConnectionDialog extends javax.swing.JDialog {
     private javax.swing.JPanel jPanel3;
     private javax.swing.JTextField nameTextField;
     private javax.swing.JPasswordField passwordField;
-    private javax.swing.JTextField portTextField;
+    private javax.swing.JFormattedTextField portField;
     private javax.swing.JTextField userTextField;
     // End of variables declaration//GEN-END:variables
+       
+
+    public int showDialog() {
+        setLocationRelativeTo(null);
+        this.setVisible(true);
+        return status;
+    }
+
+    public ConnectionData getConnectionParams() {
+        String port = portField.getText().trim();
+        return new ConnectionData(hostTextField.getText(),
+                nameTextField.getText(),
+                port.isEmpty()? 3306:Integer.parseInt(port),
+                userTextField.getText(),
+                String.copyValueOf(passwordField.getPassword()));
+    }
+
+    private boolean checkFields() {
+        if (hostTextField.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Error: Host field is empty", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        if (nameTextField.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Error: Database name field is empty", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        if (!portField.getText().trim().isEmpty() && Integer.parseInt(portField.getText()) < 0) {
+            JOptionPane.showMessageDialog(this, "Error: Port should be positive", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        if (userTextField.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Error: User field is empty", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        if (String.copyValueOf(passwordField.getPassword()).trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Error: Password field is empty", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        return true;
+    }
 }
