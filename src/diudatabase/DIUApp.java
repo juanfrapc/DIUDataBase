@@ -23,6 +23,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.ListModel;
 import javax.swing.ListSelectionModel;
+import model.ConnectionData;
+import persistence.MySQLHandler;
+import persistence.SQLHandler;
+import persistence.SQLiteHandler;
 
 /**
  *
@@ -30,10 +34,10 @@ import javax.swing.ListSelectionModel;
  */
 public class DIUApp extends javax.swing.JFrame {
 
-    private List<Connection> connections;
+    private List<SQLHandler> connections;
     private final DefaultListModel connectionListModel;
     private final DefaultListModel tableListModel;
-    private final DefaultListModel tableFieldListModel;
+    private final DefaultListModel fieldListModel;
 
     /**
      * Creates new form DIUApp
@@ -43,7 +47,8 @@ public class DIUApp extends javax.swing.JFrame {
         this.connections = new ArrayList<>();
         this.connectionListModel = (DefaultListModel) connectionList.getModel();
         this.tableListModel = (DefaultListModel) tableList.getModel();
-        this.tableFieldListModel = (DefaultListModel) tableFieldList.getModel();
+        this.fieldListModel = (DefaultListModel) fieldList.getModel();
+        this.fieldList.setSelectionModel(new NoSelectionListModel());
         this.setLocationRelativeTo(null);
     }
 
@@ -61,7 +66,7 @@ public class DIUApp extends javax.swing.JFrame {
         tableScrollPanel = new javax.swing.JScrollPane();
         tableList = new javax.swing.JList<>();
         tableFieldScrollPanel = new javax.swing.JScrollPane();
-        tableFieldList = new javax.swing.JList<>();
+        fieldList = new javax.swing.JList<>();
         singleSelButton = new javax.swing.JToggleButton();
         singleIntervalButton = new javax.swing.JToggleButton();
         multiIntervalButton = new javax.swing.JToggleButton();
@@ -76,7 +81,6 @@ public class DIUApp extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("DIUDatabase Manager");
         setMinimumSize(new java.awt.Dimension(740, 500));
-        setPreferredSize(new java.awt.Dimension(740, 500));
 
         dbPanel.setBorder(javax.swing.BorderFactory.createTitledBorder("Database Content"));
 
@@ -85,13 +89,19 @@ public class DIUApp extends javax.swing.JFrame {
         tableList.setBorder(javax.swing.BorderFactory.createTitledBorder("Tables"));
         tableList.setModel(new DefaultListModel());
         tableList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        tableList.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
+            public void valueChanged(javax.swing.event.ListSelectionEvent evt) {
+                tableListValueChanged(evt);
+            }
+        });
         tableScrollPanel.setViewportView(tableList);
 
         tableFieldScrollPanel.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
 
-        tableFieldList.setBorder(javax.swing.BorderFactory.createTitledBorder("Table Fields"));
-        tableFieldList.setModel(new DefaultListModel());
-        tableFieldScrollPanel.setViewportView(tableFieldList);
+        fieldList.setBorder(javax.swing.BorderFactory.createTitledBorder("Table Fields"));
+        fieldList.setModel(new DefaultListModel());
+        fieldList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        tableFieldScrollPanel.setViewportView(fieldList);
 
         selectionGroup.add(singleSelButton);
         singleSelButton.setSelected(true);
@@ -264,7 +274,9 @@ public class DIUApp extends javax.swing.JFrame {
         try {
             int selectedIndex = connectionList.getSelectedIndex();
             if (selectedIndex >= 0) {
-                connections.remove(selectedIndex).close();
+                fieldListModel.clear();
+                tableListModel.clear();                
+                connections.remove(selectedIndex).closeConnection();
                 connectionListModel.removeElementAt(selectedIndex);
             }
         } catch (SQLException ex) {
@@ -276,8 +288,8 @@ public class DIUApp extends javax.swing.JFrame {
         tableListModel.clear();
         int selectedIndex = connectionList.getSelectedIndex();
         if (selectedIndex >= 0) {
-            Connection activeCon = connections.get(selectedIndex);
-            ArrayList<String> tables = getTables(activeCon);
+            SQLHandler handler = connections.get(selectedIndex);
+            List<String> tables = getTables(handler);
             if (tables != null) {
                 for (String table : tables) {
                     tableListModel.addElement(table);
@@ -304,8 +316,8 @@ public class DIUApp extends javax.swing.JFrame {
                 }
                 int[] indices = new int[indexList.size()];
                 for (int i = 0; i < indices.length; i++) {
-                   indices[i] = indexList.get(i);
-                    
+                    indices[i] = indexList.get(i);
+
                 }
                 tableList.setSelectedIndices(indices);
             }
@@ -321,6 +333,18 @@ public class DIUApp extends javax.swing.JFrame {
     private void clearButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearButtonActionPerformed
         tableList.clearSelection();
     }//GEN-LAST:event_clearButtonActionPerformed
+
+    private void tableListValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_tableListValueChanged
+        fieldListModel.clear();
+        List<String> tableNames = tableList.getSelectedValuesList();
+        SQLHandler handler = connections.get(connectionList.getSelectedIndex());
+        for (String tableName : tableNames) {
+            List<String> fields = getFields(handler, tableName);
+            for (String field : fields) {
+                fieldListModel.addElement(tableName + "." + field);
+            }
+        }
+    }//GEN-LAST:event_tableListValueChanged
 
     /**
      * @param args the command line arguments
@@ -365,12 +389,12 @@ public class DIUApp extends javax.swing.JFrame {
     private javax.swing.JScrollPane connectionsPane;
     private javax.swing.JPanel dbPanel;
     private javax.swing.JButton delConnectionButton;
+    private javax.swing.JList<String> fieldList;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JToggleButton multiIntervalButton;
     private javax.swing.ButtonGroup selectionGroup;
     private javax.swing.JToggleButton singleIntervalButton;
     private javax.swing.JToggleButton singleSelButton;
-    private javax.swing.JList<String> tableFieldList;
     private javax.swing.JScrollPane tableFieldScrollPanel;
     private javax.swing.JList<String> tableList;
     private javax.swing.JScrollPane tableScrollPanel;
@@ -378,14 +402,14 @@ public class DIUApp extends javax.swing.JFrame {
 
     private void createConnection(ConnectionData params) {
         try {
-            //Class.forName("com.mysql.jdbc.Driver");
-            Class.forName("org.sqlite.JDBC");
-            System.out.println("jdbc:mysql://" + params.getHost() + ":" + params.getPort() + "/" + params.getDbName() + "?useSSL=true");
-//            connections.add((Connection) DriverManager.getConnection(
-//                    "jdbc:mysql://" + params.getHost() + ":" + params.getPort() + "/" + params.getDbName() + "?useSSL=true",
-//                    params.getUserName(),
-//                    params.getPasswd()));
-            connections.add((Connection) DriverManager.getConnection("jdbc:sqlite:Currencies.db"));
+            switch (params.getConnectionType()) {
+                case ConnectionData.SQLITE:
+                    connections.add(new SQLiteHandler(params));
+                    break;
+                case ConnectionData.MYSQL:
+                    connections.add(new MySQLHandler(params));
+                    break;
+            }
             this.connectionListModel.addElement(params.getDbName());
 
         } catch (ClassNotFoundException ex) {
@@ -395,22 +419,30 @@ public class DIUApp extends javax.swing.JFrame {
         }
     }
 
-    private ArrayList<String> getTables(Connection con) {
+    private List<String> getTables(SQLHandler handler) {
         try {
-//            Statement state = con.createStatement();
-//            String tableQuery = "SELECT name FROM sqlite_master WHERE type='table'";
-//            ResultSet result = state.executeQuery(tableQuery);
-            DatabaseMetaData metaData = con.getMetaData();
-            ResultSet result = metaData.getTables(null, null, "%", null);
-            ArrayList<String> tables = new ArrayList<>();
-            while (result.next()) {
-                tables.add(result.getString(3));
-            }
-            return tables;
+            return handler.getTables();
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
-            JOptionPane.showMessageDialog(this, "Unable to obtain tables from " + connectionList.getSelectedValue(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    "Unable to obtain tables from " + connectionList.getSelectedValue(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
             return null;
         }
     }
+
+    private List<String> getFields(SQLHandler handler, String tableName) {
+        try {
+            return handler.getFields(tableName);
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+            JOptionPane.showMessageDialog(this,
+                    "Unable to obtain columns from " + connectionList.getSelectedValue() + "." + tableName,
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+    }
+
 }
