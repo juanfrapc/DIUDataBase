@@ -1,37 +1,16 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package diudatabase;
 
-//import com.mysql.jdbc.Connection;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
-import javax.swing.JFileChooser;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.ListModel;
 import javax.swing.ListSelectionModel;
 import model.ConnectionData;
 import persistence.MySQLHandler;
 import persistence.SQLHandler;
 import persistence.SQLiteHandler;
 
-/**
- *
- * @author Entrar
- */
 public class DIUApp extends javax.swing.JFrame {
 
     private List<SQLHandler> connections;
@@ -402,6 +381,7 @@ public class DIUApp extends javax.swing.JFrame {
 
     private void createConnection(ConnectionData params) {
         try {
+  
             switch (params.getConnectionType()) {
                 case ConnectionData.SQLITE:
                     connections.add(new SQLiteHandler(params));
